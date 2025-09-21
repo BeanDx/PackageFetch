@@ -218,20 +218,25 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
         .split(main_chunks[1]);
 
     // Top right - Outdated Packages
-    let outdated_items: Vec<ListItem> = app
-        .outdated_packages
-        .iter()
-        .take(10) // Show more outdated packages
-        .map(|pkg| {
-            ListItem::new(Spans::from(vec![
-                Span::raw(&pkg.name),
-                Span::styled(
-                    format!(" [{}]", pkg.source),
-                    Style::default().fg(Color::Gray),
-                ),
-            ]))
-        })
-        .collect();
+    let outdated_items: Vec<ListItem> = if app.outdated_packages.is_empty() {
+        vec![ListItem::new(Spans::from(vec![
+            Span::styled("All packages are up to date!", Style::default().fg(Color::Green)),
+        ]))]
+    } else {
+        app.outdated_packages
+            .iter()
+            .take(10) // Show more outdated packages
+            .map(|pkg| {
+                ListItem::new(Spans::from(vec![
+                    Span::raw(&pkg.name),
+                    Span::styled(
+                        format!(" [{}]", pkg.source),
+                        Style::default().fg(Color::Gray),
+                    ),
+                ]))
+            })
+            .collect()
+    };
 
     let outdated_widget = List::new(outdated_items)
         .block(
@@ -244,19 +249,24 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
     f.render_widget(outdated_widget, right_chunks[0]);
 
     // Bottom right - Recent Packages
-    let recent_items: Vec<ListItem> = app
-        .recent_packages
-        .iter()
-        .map(|pkg| {
-            ListItem::new(Spans::from(vec![
-                Span::raw(&pkg.name),
-                Span::styled(
-                    format!(" [{}]", pkg.source),
-                    Style::default().fg(Color::Gray),
-                ),
-            ]))
-        })
-        .collect();
+    let recent_items: Vec<ListItem> = if app.recent_packages.is_empty() {
+        vec![ListItem::new(Spans::from(vec![
+            Span::styled("No recent packages found", Style::default().fg(Color::Gray)),
+        ]))]
+    } else {
+        app.recent_packages
+            .iter()
+            .map(|pkg| {
+                ListItem::new(Spans::from(vec![
+                    Span::raw(&pkg.name),
+                    Span::styled(
+                        format!(" [{}]", pkg.source),
+                        Style::default().fg(Color::Gray),
+                    ),
+                ]))
+            })
+            .collect()
+    };
 
     let recent_widget = List::new(recent_items)
         .block(
