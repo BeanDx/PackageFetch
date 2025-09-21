@@ -33,6 +33,7 @@ impl App {
         let mut pacman_packages = Vec::new();
         let mut aur_packages = Vec::new();
         let mut apt_packages = Vec::new();
+        let mut dnf_packages = Vec::new();
         let mut flatpak_packages = Vec::new();
         
         for package in &self.packages {
@@ -40,16 +41,18 @@ impl App {
                 "pacman" => pacman_packages.push(package),
                 "aur" => aur_packages.push(package),
                 "apt" => apt_packages.push(package),
+                "dnf" => dnf_packages.push(package),
                 "flatpak" => flatpak_packages.push(package),
                 _ => {}
             }
         }
         
         PackageStats {
-            total: pacman_packages.len() + aur_packages.len() + apt_packages.len() + flatpak_packages.len(),
+            total: pacman_packages.len() + aur_packages.len() + apt_packages.len() + dnf_packages.len() + flatpak_packages.len(),
             pacman: pacman_packages.len(),
             aur: aur_packages.len(),
             apt: apt_packages.len(),
+            dnf: dnf_packages.len(),
             flatpak: flatpak_packages.len(),
             outdated: self.outdated_packages.len(),
         }
@@ -62,6 +65,7 @@ pub struct PackageStats {
     pub pacman: usize,
     pub aur: usize,
     pub apt: usize,
+    pub dnf: usize,
     pub flatpak: usize,
     pub outdated: usize,
 }

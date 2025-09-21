@@ -99,6 +99,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
     let system_commands = detect_system();
     let is_arch = system_commands.iter().any(|(cmd, _)| *cmd == "pacman");
     let is_debian = system_commands.iter().any(|(cmd, _)| *cmd == "dpkg");
+    let is_fedora = system_commands.iter().any(|(cmd, _)| *cmd == "rpm");
 
     let mut stats_text = vec![
         Spans::from(vec![
@@ -133,6 +134,13 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
         ]));
     }
 
+    if is_fedora {
+        stats_text.push(Spans::from(vec![
+            Span::raw("DNF: "),
+            Span::styled(format!("{}", stats.dnf), Style::default().fg(Color::Red)),
+        ]));
+    }
+
     // Show Flatpak only if it's available
     if stats.flatpak > 0 {
         stats_text.push(Spans::from(vec![
@@ -162,7 +170,7 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
         Spans::from(""),
         Spans::from(vec![
             Span::raw("System: "),
-            Span::styled(if is_arch { "Arch Linux" } else if is_debian { "Debian/Ubuntu" } else { "Unknown" }, Style::default().fg(Color::Blue)),
+            Span::styled(if is_arch { "Arch Linux" } else if is_debian { "Debian/Ubuntu" } else if is_fedora { "Fedora Linux" } else { "Unknown" }, Style::default().fg(Color::Blue)),
         ]),
         Spans::from(vec![
             Span::raw("Kernel: "),
