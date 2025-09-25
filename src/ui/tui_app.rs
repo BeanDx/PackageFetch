@@ -17,7 +17,7 @@ use tui::{
 };
 
 use crate::app::App;
-use crate::fetch::{format_size, detect_system};
+use crate::fetch::{detect_system, format_size};
 
 pub fn run_tui<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<()> {
     let mut last_tick = Instant::now();
@@ -53,9 +53,9 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
         .margin(1)
         .constraints(
             [
-                Constraint::Length(3),  // Title
-                Constraint::Min(20),    // Main content
-                Constraint::Length(3),  // Footer
+                Constraint::Length(3), // Title
+                Constraint::Min(20),   // Main content
+                Constraint::Length(3), // Footer
             ]
             .as_ref(),
         )
@@ -63,7 +63,11 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
 
     // Title with icon
     let title = Paragraph::new("PackageFetch")
-        .style(Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD))
+        .style(
+            Style::default()
+                .fg(Color::Cyan)
+                .add_modifier(Modifier::BOLD),
+        )
         .alignment(tui::layout::Alignment::Center)
         .block(Block::default().borders(Borders::ALL));
     f.render_widget(title, chunks[0]);
@@ -104,7 +108,12 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
     let mut stats_text = vec![
         Spans::from(vec![
             Span::raw("Total packages: "),
-            Span::styled(format!("{}", stats.total), Style::default().fg(Color::Green).add_modifier(Modifier::BOLD)),
+            Span::styled(
+                format!("{}", stats.total),
+                Style::default()
+                    .fg(Color::Green)
+                    .add_modifier(Modifier::BOLD),
+            ),
         ]),
         Spans::from(""),
     ];
@@ -113,16 +122,25 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
     if is_arch {
         stats_text.push(Spans::from(vec![
             Span::raw("Pacman: "),
-            Span::styled(format!("{}", stats.pacman), Style::default().fg(Color::Blue)),
+            Span::styled(
+                format!("{}", stats.pacman),
+                Style::default().fg(Color::Blue),
+            ),
             Span::raw(" ("),
-            Span::styled(format!("{:.1}%", pacman_percentage), Style::default().fg(Color::Gray)),
+            Span::styled(
+                format!("{:.1}%", pacman_percentage),
+                Style::default().fg(Color::Gray),
+            ),
             Span::raw(")"),
         ]));
         stats_text.push(Spans::from(vec![
             Span::raw("AUR: "),
             Span::styled(format!("{}", stats.aur), Style::default().fg(Color::Yellow)),
             Span::raw(" ("),
-            Span::styled(format!("{:.1}%", aur_percentage), Style::default().fg(Color::Gray)),
+            Span::styled(
+                format!("{:.1}%", aur_percentage),
+                Style::default().fg(Color::Gray),
+            ),
             Span::raw(")"),
         ]));
     }
@@ -130,7 +148,10 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
     if is_debian {
         stats_text.push(Spans::from(vec![
             Span::raw("APT: "),
-            Span::styled(format!("{}", stats.apt), Style::default().fg(Color::Magenta)),
+            Span::styled(
+                format!("{}", stats.apt),
+                Style::default().fg(Color::Magenta),
+            ),
         ]));
     }
 
@@ -145,7 +166,10 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
     if stats.flatpak > 0 {
         stats_text.push(Spans::from(vec![
             Span::raw("Flatpak: "),
-            Span::styled(format!("{}", stats.flatpak), Style::default().fg(Color::Cyan)),
+            Span::styled(
+                format!("{}", stats.flatpak),
+                Style::default().fg(Color::Cyan),
+            ),
         ]));
     }
 
@@ -153,24 +177,47 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
         Spans::from(""),
         Spans::from(vec![
             Span::raw("Up to date: "),
-            Span::styled(format!("{}", uptodate_packages), Style::default().fg(Color::Green)),
+            Span::styled(
+                format!("{}", uptodate_packages),
+                Style::default().fg(Color::Green),
+            ),
         ]),
         Spans::from(vec![
             Span::raw("Outdated: "),
-            Span::styled(format!("{}", stats.outdated), Style::default().fg(Color::Red)),
+            Span::styled(
+                format!("{}", stats.outdated),
+                Style::default().fg(Color::Red),
+            ),
         ]),
         Spans::from(""),
         Spans::from(vec![
             Span::raw("System health: "),
             Span::styled(
                 format!("{:.1}%", 100.0 - outdated_percentage),
-                Style::default().fg(if outdated_percentage < 10.0 { Color::Green } else if outdated_percentage < 25.0 { Color::Yellow } else { Color::Red }),
+                Style::default().fg(if outdated_percentage < 10.0 {
+                    Color::Green
+                } else if outdated_percentage < 25.0 {
+                    Color::Yellow
+                } else {
+                    Color::Red
+                }),
             ),
         ]),
         Spans::from(""),
         Spans::from(vec![
             Span::raw("System: "),
-            Span::styled(if is_arch { "Arch Linux" } else if is_debian { "Debian/Ubuntu" } else if is_fedora { "Fedora Linux" } else { "Unknown" }, Style::default().fg(Color::Blue)),
+            Span::styled(
+                if is_arch {
+                    "Arch Linux"
+                } else if is_debian {
+                    "Debian/Ubuntu"
+                } else if is_fedora {
+                    "Fedora Linux"
+                } else {
+                    "Unknown"
+                },
+                Style::default().fg(Color::Blue),
+            ),
         ]),
         Spans::from(vec![
             Span::raw("Kernel: "),
@@ -180,15 +227,19 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
 
     // Add separator
     stats_text.push(Spans::from(""));
-    stats_text.push(Spans::from(vec![
-        Span::styled("─".repeat(20), Style::default().fg(Color::Gray)),
-    ]));
+    stats_text.push(Spans::from(vec![Span::styled(
+        "─".repeat(20),
+        Style::default().fg(Color::Gray),
+    )]));
 
     // Add disk information
     stats_text.push(Spans::from(""));
-    stats_text.push(Spans::from(vec![
-        Span::styled("Disk Usage", Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)),
-    ]));
+    stats_text.push(Spans::from(vec![Span::styled(
+        "Disk Usage",
+        Style::default()
+            .fg(Color::Cyan)
+            .add_modifier(Modifier::BOLD),
+    )]));
 
     for disk in &app.disk_info {
         let usage_color = if disk.usage_percentage < 70.0 {
@@ -205,18 +256,24 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
                 format!("{:.1}%", disk.usage_percentage),
                 Style::default().fg(usage_color),
             ),
-            Span::raw(format!(" ({}/{})", format_size(disk.used), format_size(disk.total))),
+            Span::raw(format!(
+                " ({}/{})",
+                format_size(disk.used),
+                format_size(disk.total)
+            )),
         ]));
     }
 
-    let stats_widget = Paragraph::new(stats_text)
-        .block(
-            Block::default()
-                .title(Spans::from(vec![
-                    Span::styled("Package Statistics", Style::default().fg(Color::Green).add_modifier(Modifier::BOLD))
-                ]))
-                .borders(Borders::ALL)
-        );
+    let stats_widget = Paragraph::new(stats_text).block(
+        Block::default()
+            .title(Spans::from(vec![Span::styled(
+                "Package Statistics",
+                Style::default()
+                    .fg(Color::Green)
+                    .add_modifier(Modifier::BOLD),
+            )]))
+            .borders(Borders::ALL),
+    );
     f.render_widget(stats_widget, main_chunks[0]);
 
     // Right side - Split into two parts
@@ -226,14 +283,20 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
         .split(main_chunks[1]);
 
     // Top right - Outdated Packages
-    let outdated_items: Vec<ListItem> = if app.outdated_packages.is_empty() {
-        vec![ListItem::new(Spans::from(vec![
-            Span::styled("All packages are up to date!", Style::default().fg(Color::Green)),
-        ]))]
+    let outdated_items: Vec<ListItem> = if let Some(err) = &app.error_message {
+        vec![ListItem::new(Spans::from(vec![Span::styled(
+            err.clone(),
+            Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
+        )]))]
+    } else if app.outdated_packages.is_empty() {
+        vec![ListItem::new(Spans::from(vec![Span::styled(
+            "All packages are up to date!",
+            Style::default().fg(Color::Green),
+        )]))]
     } else {
         app.outdated_packages
             .iter()
-            .take(10) // Show more outdated packages
+            .take(10)
             .map(|pkg| {
                 ListItem::new(Spans::from(vec![
                     Span::raw(&pkg.name),
@@ -246,21 +309,22 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
             .collect()
     };
 
-    let outdated_widget = List::new(outdated_items)
-        .block(
-            Block::default()
-                .title(Spans::from(vec![
-                    Span::styled("Outdated Packages", Style::default().fg(Color::Red).add_modifier(Modifier::BOLD))
-                ]))
-                .borders(Borders::ALL)
-        );
+    let outdated_widget = List::new(outdated_items).block(
+        Block::default()
+            .title(Spans::from(vec![Span::styled(
+                "Outdated Packages",
+                Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
+            )]))
+            .borders(Borders::ALL),
+    );
     f.render_widget(outdated_widget, right_chunks[0]);
 
     // Bottom right - Recent Packages
     let recent_items: Vec<ListItem> = if app.recent_packages.is_empty() {
-        vec![ListItem::new(Spans::from(vec![
-            Span::styled("No recent packages found", Style::default().fg(Color::Gray)),
-        ]))]
+        vec![ListItem::new(Spans::from(vec![Span::styled(
+            "No recent packages found",
+            Style::default().fg(Color::Gray),
+        )]))]
     } else {
         app.recent_packages
             .iter()
@@ -276,14 +340,16 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &App) {
             .collect()
     };
 
-    let recent_widget = List::new(recent_items)
-        .block(
-            Block::default()
-                .title(Spans::from(vec![
-                    Span::styled("Recent Packages", Style::default().fg(Color::Blue).add_modifier(Modifier::BOLD))
-                ]))
-                .borders(Borders::ALL)
-        );
+    let recent_widget = List::new(recent_items).block(
+        Block::default()
+            .title(Spans::from(vec![Span::styled(
+                "Recent Packages",
+                Style::default()
+                    .fg(Color::Blue)
+                    .add_modifier(Modifier::BOLD),
+            )]))
+            .borders(Borders::ALL),
+    );
     f.render_widget(recent_widget, right_chunks[1]);
 
     // Footer
@@ -302,9 +368,7 @@ pub fn setup_terminal() -> io::Result<Terminal<CrosstermBackend<io::Stdout>>> {
     Ok(terminal)
 }
 
-pub fn restore_terminal(
-    terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
-) -> io::Result<()> {
+pub fn restore_terminal(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> io::Result<()> {
     disable_raw_mode()?;
     execute!(
         terminal.backend_mut(),

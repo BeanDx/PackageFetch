@@ -14,141 +14,125 @@ pub fn detect_system() -> Vec<(&'static str, Vec<&'static str>)> {
             ("yay", vec!["-Qm"]), // AUR packages
         ];
     }
-    
+
     if Command::new("apt").arg("--version").output().is_ok() {
         return vec![
             ("dpkg", vec!["-l"]),
             ("flatpak", vec!["list"]), // Flatpak packages
         ];
     }
-    
+
     if Command::new("dnf").arg("--version").output().is_ok() {
         return vec![
-            ("rpm", vec!["-qa"]), // All installed packages
+            ("rpm", vec!["-qa"]),      // All installed packages
             ("flatpak", vec!["list"]), // Flatpak packages
         ];
     }
-    
+
     vec![]
 }
 
 pub fn get_packages() -> Vec<PackageInfo> {
     let mut packages = Vec::new();
     let commands = detect_system();
-    
+
     for (command, args) in commands {
-        let output = Command::new(command)
-            .args(&args)
-            .output();
-            
+        let output = Command::new(command).args(&args).output();
+
         match output {
             Ok(result) if result.status.success() => {
                 let output_str = String::from_utf8_lossy(&result.stdout);
                 let source = match command {
                     "pacman" => "pacman",
-                    "yay" => "aur", 
+                    "yay" => "aur",
                     "dpkg" => "apt",
                     "rpm" => "dnf",
                     "flatpak" => "flatpak",
-                    _ => "unknown"
+                    _ => "unknown",
                 };
-                
+
                 for line in output_str.lines() {
                     if !line.trim().is_empty() {
                         packages.push(PackageInfo {
                             name: line.to_string(),
-                            version: "".to_string(), // TODO: parse version
+                            version: "".to_string(),
                             source: source.to_string(),
                         });
                     }
                 }
             }
             Ok(result) => {
-                eprintln!("Error executing {}: {}", command, String::from_utf8_lossy(&result.stderr));
+                eprintln!(
+                    "Error executing {}: {}",
+                    command,
+                    String::from_utf8_lossy(&result.stderr)
+                );
             }
             Err(_) => {
                 // Command not found - this is normal
             }
         }
     }
-    
+
     packages
 }
 
-pub fn get_outdated_packages() -> Vec<PackageInfo> {
-    let mut outdated = Vec::new();
-    
-    if Command::new("pacman").arg("--version").output().is_ok() {
-        // Sync database for more accurate results
-        let _sync_output = Command::new("pacman")
-            .arg("-Sy")  // database synchronization
-            .output();
-        
-        let output = Command::new("pacman")
-            .arg("-Qu")  // flag for outdated packages
-            .output();
-            
-        match output {
-            Ok(result) if result.status.success() => {
-                let output_str = String::from_utf8_lossy(&result.stdout);
-                for line in output_str.lines() {
-                    if !line.trim().is_empty() {
-                        outdated.push(PackageInfo {
-                            name: line.to_string(),
-                            version: "".to_string(),
-                            source: "pacman".to_string(),
-                        });
-                    }
-                }
-            }
-            Ok(_) => {
-                // No outdated packages - this is normal
-            }
-            Err(_) => {
-                // Command not found
-            }
+pub fn get_outdated_packages() -> Result<Vec<PackageInfo>, String> {
+    let mut outdated: Vec<PackageInfo> = Vec::new();
+
+    // checkupdates for pacman
+    let res = Command::new("checkupdates")
+        .output()
+        .map_err(|e| format!("checkupdates not found or failed to execute: {}", e))?;
+
+    // if checkupdates failed (non-zero exit code), return empty list
+    let out = String::from_utf8_lossy(&res.stdout);
+    for line in out.lines() {
+        let line = line.trim();
+        if line.is_empty() {
+            continue;
         }
+        // format 
+        outdated.push(PackageInfo {
+            name: line.to_string(),
+            version: "".to_string(),
+            source: "pacman".to_string(),
+        });
     }
-    
-    // Check for yay for AUR packages
+
+    // aur via yay
     if Command::new("yay").arg("--version").output().is_ok() {
-        let output = Command::new("yay")
-            .arg("-Qu")  // flag for outdated AUR packages
-            .output();
-            
-        match output {
-            Ok(result) if result.status.success() => {
+        if let Ok(result) = Command::new("yay").arg("-Qu").output() {
+            if result.status.success() {
                 let output_str = String::from_utf8_lossy(&result.stdout);
                 for line in output_str.lines() {
-                    if !line.trim().is_empty() {
-                        outdated.push(PackageInfo {
-                            name: line.to_string(),
-                            version: "".to_string(),
-                            source: "aur".to_string(),
-                        });
+                    let line = line.trim();
+                    if line.is_empty() {
+                        continue;
                     }
+                    outdated.push(PackageInfo {
+                        name: line.to_string(),
+                        version: "".to_string(),
+                        source: "aur".to_string(),
+                    });
                 }
+            } else {
+                eprintln!(
+                    "warn: `yay -Qu` returned non-zero: {}",
+                    String::from_utf8_lossy(&result.stderr)
+                );
             }
-            Ok(_) => {
-                // No outdated packages
-            }
-            Err(_) => {
-                // Command not found
-            }
+        } else {
+            eprintln!("warn: failed to run `yay -Qu`");
         }
     }
-    
-    // Check for dnf for Fedora packages
+
+    // fedora dnf
     if Command::new("dnf").arg("--version").output().is_ok() {
-        let output = Command::new("dnf")
-            .arg("list")
-            .arg("upgrades")
-            .output();
-            
-        match output {
-            Ok(result) if result.status.success() => {
+        if let Ok(result) = Command::new("dnf").args(["list", "upgrades"]).output() {
+            if result.status.success() {
                 let output_str = String::from_utf8_lossy(&result.stdout);
-                for line in output_str.lines().skip(1) { // Skip header
+                for line in output_str.lines().skip(1) {
                     if !line.trim().is_empty() && !line.starts_with("Last metadata") {
                         let parts: Vec<&str> = line.split_whitespace().collect();
                         if parts.len() >= 2 {
@@ -161,32 +145,26 @@ pub fn get_outdated_packages() -> Vec<PackageInfo> {
                     }
                 }
             }
-            Ok(_) => {
-                // No outdated packages
-            }
-            Err(_) => {
-                // Command not found
-            }
         }
     }
-    
-    outdated
+
+    Ok(outdated)
 }
 
 pub fn get_recent_packages() -> Vec<PackageInfo> {
     let mut recent = Vec::new();
-    
+
     // Get recently installed packages via pacman
     if Command::new("pacman").arg("--version").output().is_ok() {
         let output = Command::new("pacman")
-            .arg("-Q")  // all installed packages
+            .arg("-Q") // all installed packages
             .output();
-            
+
         match output {
             Ok(result) if result.status.success() => {
                 let output_str = String::from_utf8_lossy(&result.stdout);
                 let mut lines: Vec<&str> = output_str.lines().collect();
-                
+
                 // Take last 5 packages
                 lines.reverse();
                 for line in lines.iter().take(5) {
@@ -207,7 +185,7 @@ pub fn get_recent_packages() -> Vec<PackageInfo> {
             }
         }
     }
-    
+
     // Get recently installed packages via dnf for Fedora
     if Command::new("dnf").arg("--version").output().is_ok() {
         let output = Command::new("dnf")
@@ -216,11 +194,12 @@ pub fn get_recent_packages() -> Vec<PackageInfo> {
             .arg("installed")
             .arg("--limit=5")
             .output();
-            
+
         match output {
             Ok(result) if result.status.success() => {
                 let output_str = String::from_utf8_lossy(&result.stdout);
-                for line in output_str.lines().skip(1) { // Skip header
+                for line in output_str.lines().skip(1) {
+                    // Skip header
                     if !line.trim().is_empty() {
                         let parts: Vec<&str> = line.split_whitespace().collect();
                         if parts.len() >= 3 {
@@ -231,7 +210,7 @@ pub fn get_recent_packages() -> Vec<PackageInfo> {
                                     .split_whitespace()
                                     .find(|s| !s.starts_with("install") && !s.starts_with("-"))
                                     .unwrap_or("unknown");
-                                
+
                                 recent.push(PackageInfo {
                                     name: package_name.to_string(),
                                     version: "".to_string(),
@@ -250,6 +229,6 @@ pub fn get_recent_packages() -> Vec<PackageInfo> {
             }
         }
     }
-    
+
     recent
 }

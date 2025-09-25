@@ -34,7 +34,8 @@ It gives you a fun and fast overview of your system's installed software.
 
 ## 🚀 Get Started
 
-Before you start, make sure you have **Rust** installed.
+Before you start, make sure you have **Rust** installed.  
+For Arch Linux users you need [pacman-contrib](https://archlinux.org/packages/extra/x86_64/pacman-contrib/) to be installed.
 
 #### 1. Clone the repository
 
